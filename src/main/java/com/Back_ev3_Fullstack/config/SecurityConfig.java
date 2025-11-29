@@ -43,6 +43,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/libros/**").hasRole("ADMIN") //crud de libros solo rol admin
                         .anyRequest().authenticated()
                 )
 

@@ -61,7 +61,7 @@ public class AuthController {
 
         List<String> rolesConPrefijo = usuario.getRoles()
                 .stream()
-                .map(r -> "ROLE_" + r.name())   // <-- AQUÍ se agrega el prefijo obligatorio
+                .map(r -> "ROLE_" + r.name())   // aqui se agrega el prefijo obligatorio
                 .toList();
 
         // Crear token CON roles convertidos
