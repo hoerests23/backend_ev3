@@ -8,6 +8,12 @@ import com.Back_ev3_Fullstack.repository.UsuarioRepository;
 import com.Back_ev3_Fullstack.security.CustomUserDetailsService;
 import com.Back_ev3_Fullstack.security.JwtUtil;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +34,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Autenticación", description = "Endpoints para login, registro y gestión de usuarios")
 public class AuthController {
 
     @Autowired
@@ -47,6 +54,14 @@ public class AuthController {
 
     // LOGIN
     @PostMapping("/login")
+    @Operation(
+            summary = "Iniciar sesión",
+            description = "Autentica un usuario y devuelve un token JWT"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login exitoso, token JWT generado"),
+            @ApiResponse(responseCode = "401", description = "Credenciales inválidas")
+    })
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
         try {
             authenticationManager.authenticate(
@@ -61,7 +76,7 @@ public class AuthController {
 
         List<String> rolesConPrefijo = usuario.getRoles()
                 .stream()
-                .map(r -> "ROLE_" + r.name())   // aqui se agrega el prefijo obligatorio
+                .map(r -> "ROLE_" + r.name())
                 .toList();
 
         // Crear token CON roles convertidos
@@ -70,8 +85,15 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("token", token));
     }
 
-
     @PostMapping("/register")
+    @Operation(
+            summary = "Registrar nuevo usuario",
+            description = "Crea un nuevo usuario con rol USER por defecto"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Usuario registrado correctamente"),
+            @ApiResponse(responseCode = "400", description = "El correo ya está registrado")
+    })
     public ResponseEntity<String> registro(@RequestBody RegistroRequest request) {
 
         if (usuarioRepository.findByCorreo(request.getCorreo()) != null) {
@@ -89,8 +111,17 @@ public class AuthController {
         return ResponseEntity.ok("Usuario registrado correctamente");
     }
 
-    // ENDPOINT para frontend: devuelve usuario actual y roles
+    // ENDPOINT para frontend devuelve usuario actual y roles
     @GetMapping("/me")
+    @Operation(
+            summary = "Obtener información del usuario actual",
+            description = "Devuelve el correo y roles del usuario autenticado"
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Información del usuario obtenida correctamente"),
+            @ApiResponse(responseCode = "401", description = "Usuario no autenticado")
+    })
     public ResponseEntity<?> me() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -107,24 +138,34 @@ public class AuthController {
 
         var roles = auth.getAuthorities()
                 .stream()
-                .map(a -> a.getAuthority()) // ROLE_USER, ROLE_ADMIN
+                .map(a -> a.getAuthority())
                 .toList();
 
         return ResponseEntity.ok(Map.of("correo", correo, "roles", roles));
     }
 
-
     // Prueba de endpoints protegidos
     @GetMapping("/user")
     @PreAuthorize("hasRole('USER')")
+    @Operation(
+            summary = "Endpoint de prueba para USER",
+            description = "Verifica que un usuario con rol USER puede acceder"
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponse(responseCode = "200", description = "Acceso permitido para rol USER")
     public String userOnly() {
         return "Usuario";
     }
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Endpoint de prueba para ADMIN",
+            description = "Verifica que un usuario con rol ADMIN puede acceder"
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponse(responseCode = "200", description = "Acceso permitido para rol ADMIN")
     public String adminOnly() {
         return "Admin";
     }
-
 }
