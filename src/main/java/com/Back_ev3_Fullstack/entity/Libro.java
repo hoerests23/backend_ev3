@@ -30,6 +30,8 @@ public class Libro {
     @Column(nullable = false)
     private Integer stock;
 
+    @Column(length = 500)
+    private String imagen;
 
     private String categoria;
 
